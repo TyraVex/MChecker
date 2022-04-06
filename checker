@@ -181,7 +181,7 @@ worker() {
     if (( "$i" > "$nextStep" )); then
       ((nextStep=i+10))
       while (( $(ps | grep curl | wc -l) > 10 )); do
-        echo -e "\e[31m# Reached max threads...\e[0m"
+        echo -e "\e[31mSYS > Reached max threads...\e[0m"
         sleep 1
       done
     fi
