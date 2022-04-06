@@ -34,7 +34,7 @@ menu() {
     echo -e '\n\e[31mNo rotating proxy found\n\e[0m'
     editProxy
   fi
-  readarray -t paths <<< $(find -type f -not -wholename './data/bads' -not -wholename './data/hits' -not -wholename "$0" -not -path './data/.*' -not -path './.*' -not -size 0)
+  readarray -t paths <<< $(find -type f -not -wholename './README.md' -not -wholename './data/bads' -not -wholename './data/hits' -not -wholename "$0" -not -path './data/.*' -not -path './.*' -not -size 0)
   if [[ -z "$paths" ]]; then
     echo -e "\e[31mNo files that could be used as combos were found\n"
     exit
