@@ -22,3 +22,6 @@ MChecker is a minecraft account checker that has been designed to be efficient w
 ## To-do
 - Stats while checking
 - Custom max threads
+
+## Preview
+![preview](https://i.imgur.com/bu7XS3m.jpg)
