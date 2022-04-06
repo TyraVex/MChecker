@@ -10,6 +10,8 @@ MChecker is a minecraft account checker that has been designed to be efficient w
 - Optimized combo loading
 - Optimized threads control
 - Smart combo selection
+- Valid lines filtering
+- Do not check already checked lines
 - Fancy stats at startup
 - Selected combo preview
 - Rotating proxy testing
