@@ -1,7 +1,7 @@
 # MChecker
 
 ## Description
-MChecker is a minecraft account checker that has been designed to be efficient, with an elegant, colourful, and easy to use cli ui.
+MChecker is a minecraft account checker that has been designed to be efficient with an elegant and easy to use cli Interface.
 
 ## Features
 - Optimized async checker
