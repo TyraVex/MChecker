@@ -175,12 +175,12 @@ testProxy() {
 worker() {
 
   echo -e "\nLaunching threads...\n"
-  nextStep=10
+  nextStep=50
   rm data/.temp
   for ((i=0; i < "${#lines[@]}"; i++)); do
     if (( "$i" > "$nextStep" )); then
-      ((nextStep=i+10))
-      while (( $(ps | grep curl | wc -l) > 10 )); do
+      ((nextStep=i+50))
+      while (( $(ps | grep curl | wc -l) > 100 )); do
         sleep 1
       done
     fi
